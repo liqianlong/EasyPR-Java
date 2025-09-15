@@ -25,14 +25,18 @@ public class PlateDetect {
      *         </ul>
      */
     public int plateDetect(final Mat src, Vector<Mat> resultVec) {
+        if (src == null || src.data().isNull() || src.empty()) {
+            return -1; // source Mat is empty
+        }
+
         Vector<Mat> matVec = plateLocate.plateLocate(src);
 
         if (0 == matVec.size()) {
-            return -1;
+            return -2; // plate not detected
         }
 
         if (0 != plateJudge.plateJudge(matVec, resultVec)) {
-            return -2;
+            return -2; // plate not detected after judge
         }
 
         if (getPDDebug()) {
