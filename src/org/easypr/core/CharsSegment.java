@@ -59,6 +59,9 @@ public class CharsSegment {
         int h = input.rows();
         Mat tmpMat = new Mat(input, new Rect((int) (w * 0.1), (int) (h * 0.1), (int) (w * 0.8), (int) (h * 0.8)));
 
+        // 记录原图宽度，供中文字符位置推断
+        this.theMatWidth = input.cols();
+
         switch (getPlateType(tmpMat, true)) {
         case BLUE:
             threshold(input_grey, img_threshold, 10, 255, CV_THRESH_OTSU + CV_THRESH_BINARY);
@@ -133,7 +136,9 @@ public class CharsSegment {
             return -3;
 
         if (this.isDebug) {
-            Mat chineseMat = new Mat(img_threshold, chineseRect);
+            // 保证中文Rect在图像范围内
+            Rect boundedChineseRect = boundRectToImage(chineseRect, img_threshold.cols(), img_threshold.rows());
+            Mat chineseMat = new Mat(img_threshold, boundedChineseRect);
             String str = "tmp/debug_chineseMat.jpg";
             imwrite(str, chineseMat);
         }
@@ -142,6 +147,8 @@ public class CharsSegment {
         // 将中文字符Rect第一个加进来，因为它肯定是最左边的
         // 其余的Rect只按照顺序去6个，车牌只可能是7个字符！这样可以避免阴影导致的“1”字符
         Vector<Rect> newSortedRect = new Vector<Rect>();
+        // 加入边界限制后的中文Rect
+        chineseRect = boundRectToImage(chineseRect, img_threshold.cols(), img_threshold.rows());
         newSortedRect.add(chineseRect);
         RebuildRect(sortedRect, newSortedRect, specIndex);
 
@@ -369,6 +376,25 @@ public class CharsSegment {
             out.add(vecRect.get(orderIndex.get(i)));
 
         return;
+    }
+
+    // 将矩形裁剪到图像范围内，防止越界
+    private Rect boundRectToImage(final Rect r, final int imageWidth, final int imageHeight) {
+        int x = Math.max(0, r.x());
+        int y = Math.max(0, r.y());
+        int w = r.width();
+        int h = r.height();
+
+        if (x + w > imageWidth) {
+            w = imageWidth - x;
+        }
+        if (y + h > imageHeight) {
+            h = imageHeight - y;
+        }
+        // 如果由于裁剪导致非正尺寸，返回最小为1的尺寸以避免异常
+        w = Math.max(1, w);
+        h = Math.max(1, h);
+        return new Rect(x, y, w, h);
     }
 
     public void setLiuDingSize(int param) {

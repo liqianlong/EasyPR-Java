@@ -214,9 +214,11 @@ public class CoreFunc {
 
         // 统计这一行或一列中，非零元素的个数，并保存到nonZeroMat中
         float[] nonZeroMat = new float[sz];
-        extractChannel(img, img, 0);
+        // 提取单通道到新的 Mat，避免原图被就地修改
+        Mat singleChannel = new Mat();
+        extractChannel(img, singleChannel, 0);
         for (int j = 0; j < sz; j++) {
-            Mat data = (direction == Direction.HORIZONTAL) ? img.row(j) : img.col(j);
+            Mat data = (direction == Direction.HORIZONTAL) ? singleChannel.row(j) : singleChannel.col(j);
             int count = countNonZero(data);
             nonZeroMat[j] = count;
         }
@@ -267,9 +269,9 @@ public class CoreFunc {
         for (int i = 0; i < hhist.length; ++i, ++j) {
             idx.put(0, j, hhist[i]);
         }
-        for (int x = 0; x < lowData.cols(); x++) {
-            for (int y = 0; y < lowData.rows(); y++, ++j) {
-                float val = lowData.ptr(x, y).get() & 0xFF;
+        for (int y = 0; y < lowData.rows(); y++) {
+            for (int x = 0; x < lowData.cols(); x++, ++j) {
+                float val = lowData.ptr(y, x).get() & 0xFF;
                 idx.put(0, j, val);
             }
         }
